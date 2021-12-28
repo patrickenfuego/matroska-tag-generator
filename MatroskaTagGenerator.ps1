@@ -133,11 +133,9 @@ function Get-ID {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, Position = 0)]
-        [ValidateNotNullOrEmpty()]
         [string]$Title,
 
         [Parameter(Mandatory = $true, Position = 1)]
-        [ValidateNotNullOrEmpty()]
         [string]$APIKey
     )
 
@@ -148,7 +146,7 @@ function Get-ID {
         Write-Host $id @progressColors
         Write-Host "---------------------------------------------" @dividerColor
     }
-
+    
     return [int]$id
 }
 
@@ -360,8 +358,22 @@ try {
 }
 catch {
     if (!$id) {
-        $testTitle = 'Ex Machina'
-        $testQuery = Get-ID -Title $testTitle -APIKey $APIKey
+        try {
+            $testTitle = 'Ex Machina'
+            $testQuery = Get-ID -Title $testTitle -APIKey $APIKey -ErrorAction Stop
+        }
+        catch {
+            $params = @{
+                Message           = "API endpoint is not reachable. Verify that the API key is not empty and that the endpoint is online"
+                RecommendedAction = "Verify API Key is not null or empty, and manually test API functionality"
+                Category          = 'AuthenticationError'
+                CategoryActivity  = "REST API Call to TMDB Failed"
+                TargetObject      = $APIKey
+                ErrorId           = 1
+            }
+            Write-Error @params
+            exit 1
+        }
         if ($testQuery) {
             $params = @{
                 Message           = "Return ID is empty, but the API endpoint is reachable using:`n`nKey: '$APIKey'`nTest Query: '$testTitle'`n"
@@ -369,20 +381,10 @@ catch {
                 Category          = 'InvalidArgument'
                 CategoryActivity  = "TMDB Identifier Retrieval"
                 TargetObject      = $title
-                ErrorId           = 1
-            }
-            Write-Error @params
-        }
-        else {
-            $params = @{
-                Message           = "API endpoint isn't reachable using:`n`nKey: $APIKey"
-                RecommendedAction = "Verify that the API key is correct and the endpoint is reachable"
-                Category          = 'AuthenticationError'
-                CategoryActivity  = "REST API Call to TMDB Failed"
-                TargetObject      = $APIKey
                 ErrorId           = 2
             }
             Write-Error @params
+            exit 2
         }
     }
     elseif (!$movieObj) {
@@ -395,10 +397,8 @@ catch {
             ErrorId           = 3
         }
         Write-Error @params
+        exit 3
     }
-    Write-Host
-    Write-Error "Failed to retrieve metadata. Exiting script"
-    exit 1
 }
 
 #Try to create XML file
