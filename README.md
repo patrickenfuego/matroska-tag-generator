@@ -1,8 +1,8 @@
 # matroska-tag-generator
 
-![Example](https://i.imgur.com/s3ohFhp.png)
+![MediaInfo Example](https://i.imgur.com/s3ohFhp.png)
 
-A CLI-based PowerShell script to automate the creation of Matroska tag files using the TMDB API. Cross-platform and compatible with PowerShell 5.1 or greater (linux/macOS users must install PowerShell 6/7).
+A CLI-based PowerShell script for automating Matroska tag files using the TMDB API. Cross-platform and compatible with PowerShell 5.1 or greater (linux/macOS users must install PowerShell 6/7).
 
 ## About
 
