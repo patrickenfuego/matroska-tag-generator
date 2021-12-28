@@ -253,8 +253,13 @@ function Get-Metadata {
                 $prop = (Get-Culture).TextInfo.ToTitleCase($prop)
                 #check for duplicate key before adding
                 if (!$obj.ContainsKey($prop)) {
-                    $obj.Add($prop, $genQuery.$prop)
-
+                    if ($prop -like "budget") {
+                        [int]$val = $genQuery.$prop
+                        $fNumber = "$" + $("{0:N0}" -f $val)
+                        $obj.Add($prop, $fNumber)
+                    }
+                    else { $obj.Add($prop, $genQuery.$prop) }
+                    
                     Write-Host "---------------------------------------------" @dividerColor
                     Write-Host "$prop metadata successfully retrieved! $prop info: " -NoNewline
                     Write-Host $genQuery.$prop @progressColors
