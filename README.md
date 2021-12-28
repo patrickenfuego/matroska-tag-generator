@@ -1,10 +1,14 @@
 # matroska-tag-generator
 
+![Example](https://i.imgur.com/s3ohFhp.png)
+
 A CLI-based PowerShell script to automate the creation of Matroska tag files using the TMDB API. Cross-platform and compatible with PowerShell 5.1 or greater (linux/macOS users must install PowerShell 6/7).
 
 ## About
 
-Using this script, you can quickly generate an XML tag file for media using the mkv format. If the [MKVToolNix](https://mkvtoolnix.download/) suite is installed, the file can be added to the container automatically after creation. To use this script, you must have a valid [TMDB API key](https://www.themoviedb.org/documentation/api), which can be obtained for free on their website.
+This script allows you to quickly generate XML tag files for media using the Matroska (mkv) container format.
+
+If the [MKVToolNix](https://mkvtoolnix.download/) suite is installed, the metadata file will be automatically appended to the media file unless specified otherwise. To use this script, you must have a valid [TMDB API key](https://www.themoviedb.org/documentation/api), which can be obtained for free on their website.
 
 Custom metadata tags can be viewed by software like [MediaInfo](https://mediaarea.net/en/MediaInfo), and can be used by metadata scrapers in software like [Plex](https://www.plex.tv/) or [Emby](https://emby.media/). They're also a nice way to quickly view metadata information without internet access.
 
