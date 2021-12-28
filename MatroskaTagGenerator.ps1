@@ -162,6 +162,12 @@ function Get-Metadata {
         [string]$APIKey
     )
 
+    #Trap to prevent terminating errors from crashing the script when a property isn't returned from the API
+    trap { 
+        Write-Error "An error occurred. Skipping property..."
+        continue
+    }
+
     #Create base object
     $obj = @{
         'TMDB' = $Id
@@ -209,16 +215,18 @@ function Get-Metadata {
     if ('Writers' -notin $SkipProperties) {
         Write-Host "Requesting writers metadata..."
         $writers = $credits.crew | Where-Object { $_.department -eq "Writing" } | 
-            Select-Object name, job -First 3 -Unique
-        [array]$writerArray += $writers.ForEach({ "$($_.name) ($($_.job))" })
+                Select-Object name, job -First 3 -Unique
+        if ($writers -is [array]) {
+            [array]$writerArray += $writers.ForEach({ "$($_.name) ($($_.job))" })
+        }
+        else { 
+            $writerArray = @($("$($writers.name) ($($writers.job))"))
+        }
         if ($writerArray) {
-            Write-Host "Cast metadata successfully retrieved! Writers info: " -NoNewline
+            Write-Host "Writers metadata successfully retrieved! Writers info: " -NoNewline
             Write-Host $($writerArray -join ', ') @progressColors
             
             $obj['Written By'] = $writerArray
-        }
-        else {
-            Write-Warning "Failed to retrieve Writers metadata. Property will be skipped"
         }
     }
     else { Write-Host "Skipping Writers..." @warnColors }
@@ -289,7 +297,7 @@ function New-XMLTagFile {
         [string]$OutputFile
     )
 
-    [xml]$doc = New-Object System.Xml.XmlDocument
+    [xml]$doc = [System.Xml.XmlDocument]::new()
     $null = $doc.AppendChild($doc.CreateXmlDeclaration('1.0', 'UTF-8', $null))
     $root = $doc.CreateNode('element', 'Tags', $null)
     $tag = $doc.CreateNode('element', 'Tag', $null)
@@ -357,7 +365,7 @@ if (!$PSBoundParameters['Title']) {
 #Try to retrieve metadata. Catch and display a variety of potential errors
 try {
     [int]$id = Get-ID -Title $Title -APIKey $APIKey -ErrorAction Stop
-    $movieObj = Get-Metadata -Id $id -APIKey $APIKey -ErrorAction Stop
+    $movieObj = Get-Metadata -Id $id -APIKey $APIKey
     
     Write-Verbose "Object output:`n`n$($movieObj | Out-String)"
 }
