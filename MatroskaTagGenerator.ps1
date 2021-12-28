@@ -106,7 +106,7 @@ param (
 )
 
 #########################################################
-# Define Variables & Sanitize Input                     #                                           
+# Define Variables                                      #                                           
 #########################################################
 
 #Console colors
