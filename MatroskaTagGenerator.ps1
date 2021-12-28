@@ -82,7 +82,7 @@ param (
 
     [Parameter(Mandatory = $false, Position = 1)]
     [Alias('Key')]
-    [string]$APIKey = '9062555f293fab25e1aaffe822b93bb4',
+    [string]$APIKey,
 
     [Parameter(Mandatory = $false, Position = 2)]
     [Alias('T')]
