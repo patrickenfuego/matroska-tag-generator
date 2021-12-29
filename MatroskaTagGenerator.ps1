@@ -31,6 +31,11 @@
         <String> Specify a clean title to use for the API search. Use this when the destination file title 
                  contains characters that may disrupt the search; the script will attempt to sanitize input
                  file names, but may not be successful
+    .PARAMETER Year
+        <int32> Specify the release year for the search title. This parameter is helpful for titles with
+                multiple release years, such as remakes. This parameter should be used when the API returns
+                incorrect results. It can also be helpful for titles that have a year in the name already
+                (i.e. 'Blade Runner 2049 2017')
     .PARAMETER NoMux
         <Bool> Switch parameter to skip file multiplexing with mkvpropedit (but still generate the file)
     .PARAMETER AllowClobber
@@ -89,6 +94,9 @@ param (
     [string]$Title,
 
     [Parameter(Mandatory = $false)]
+    [int]$Year,
+
+    [Parameter(Mandatory = $false)]
     [Alias('Props')]
     [string[]]$Properties,
 
@@ -136,18 +144,40 @@ function Get-ID {
         [string]$Title,
 
         [Parameter(Mandatory = $true, Position = 1)]
-        [string]$APIKey
+        [string]$APIKey,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Year
     )
 
     Write-Host "Requesting TMDB ID for '$Title'..."
     $query = Invoke-RestMethod -Uri "https://api.themoviedb.org/3/search/movie?api_key=$($APIKey)&query=$($Title)" -Method GET
-    if ($id = $query.results[0].id) {
+    
+    #Verify if API returned multiple objects, and warn if no year was passed
+    if ($query.results.Count -gt 1 -and $Year) {
+        $queryID = $query.results | Where-Object { $_.release_date -like "$Year*" } | 
+            Select-Object -ExpandProperty id
+    }
+    elseif ($query.results.Count -gt 1 -and !$Year) {
+        $msg = "Query returned more than 1 result, but a release year was not specified - " +
+               "the result may be incorrect. Consider using the -Year parameter " +
+               "or place the year in the file's title if needed"
+        Write-Warning $msg
+
+        $queryID = $query.results[0].id
+    }
+    else { $queryID = $query.results[0] }
+    
+    if ($queryID) {
         Write-Host "ID successfully retrieved! ID: " -NoNewline
-        Write-Host $id @progressColors
+        Write-Host $queryID @progressColors
+        if ('TMDbID' -in $SkipProperties) {
+            Write-Host "Skipping TMDB ID in tag file..." @warnColors
+        }
         Write-Host "---------------------------------------------" @dividerColor
     }
     
-    return [int]$id
+    return [int]$queryID
 }
 
 #Retrieves movie metadata for tag creation. Custom properties are NOT checked for accuracy OR existence
@@ -169,9 +199,12 @@ function Get-Metadata {
     }
 
     #Create base object
-    $obj = @{
-        'TMDB' = $Id
+    if ('TMDbID' -notin $SkipProperties) {
+        $obj = @{
+            'TMDB' = $Id
+        }
     }
+    else { $obj = @{} }
 
     #Pull general info including IMDb ID
     if ('IMDbID' -notin $SkipProperties) {
@@ -339,32 +372,75 @@ if ((Test-Path -Path $outXML) -and !$PSBoundParameters['AllowClobber']) {
 
 Write-Host "$banner`n`n" @dividerColor
 
-#Sanitize title if not passed via parameter
-if (!$PSBoundParameters['Title']) {
+#Sanitize title/year if not passed via parameter
+if (!$PSBoundParameters['Title'] -or !$PSBoundParameters['Year']) {
     $leafBase = (Split-Path -Path $Path -Leaf) -replace '\..*', ''
 
     #Try to sanitize input title
-    $Title = switch -Regex ($leafBase) {
-        "^(?<title>[^(]+)(?=.*\()"            { ($Matches.title -replace '\.|_', ' ').Trim(); break }
-        "^(?<title>.*).*(?<year>\d{4}).*\d+p" { ($Matches.title -replace '\.|_', ' ').Trim(); break }
-        default                               { 'Undefined' }
+    $mTitle, $mYear = switch -Regex ($leafBase) {
+        '^(?<title>[^(]+(?=\d+)?).*\(?(?<year>\d{4})\)?$' {
+            Write-host "Match case 1"
+            ($Matches.title -replace '\.|_', ' ').Trim(),
+            ($Matches.year).Trim()
+    
+            break 
+        }
+        '^(?<title>.+(?=\d+)?).*(?<year>\d{4}).*\d+p' {
+            Write-host "Match case 2"
+            ($Matches.title -replace '\.|_|\(', ' ').Trim(),
+            ($Matches.year).Trim()
+    
+            break 
+        }
+        default { 'Undefined', 'Undefined' }
     }
-    if ($Title -ne 'Undefined') {
+    
+    #Verify if Title was passed. Otherwise, assign to mTitle if applicable
+    if ($PSBoundParameters['Title']) {
         Write-Host "Search title: " -NoNewline
         Write-Host $Title @progressColors
     }
-    else { 
-        Write-Warning "Could not sanitize input title, query may fail. Consider using the -Title parameter instead"
+    elseif (!$Title -and $mTitle -ne 'Undefined') {
+        $Title = $mTitle
+        Write-Host "Search title: " -NoNewline
+        Write-Host $Title @progressColors
+    }
+    else {
+        $msg = "Could not sanitize input title, query may fail. If incorrect results are returned " +
+               "or the script fails, use the -Title parameter to specify a clean title"
+        Write-Warning $msg
         $Title = $leafBase -replace '\.|_', ' '
         Write-Host "Title is: " -NoNewline
         Write-Host $Title @progressColors
     }
-}
 
+    #Verify if Year was passed. Otherwise, assign to mYear if applicable
+    if ($PSBoundParameters['Year']) {
+        if ([string]$Year -notmatch '^[0-9]{4}$') {
+            $msg = "Incorrect Year format. A 4 digit integer was expected, but $Year was received. " +
+                   "Value will be skipped"
+            Write-Warning $msg
+            $Year = $null
+        }
+        else {
+            Write-Host "Search year: " -NoNewline
+            Write-Host $Year @progressColors
+        }
+    }
+    elseif (!$Year -and $mYear -ne 'Undefined') {
+        [int]$Year = $mYear
+        Write-Host "Search year: " -NoNewline
+        Write-Host $Year @progressColors
+    }
+    else { 
+        Write-Warning "Could not sanitize input year, or no year was provided"
+        $Year = $null
+    }
+}
 
 #Try to retrieve metadata. Catch and display a variety of potential errors
 try {
-    [int]$id = Get-ID -Title $Title -APIKey $APIKey -ErrorAction Stop
+    [int]$id = Get-ID -Title $Title -APIKey $APIKey -Year $Year -ErrorAction Stop
     $movieObj = Get-Metadata -Id $id -APIKey $APIKey
     
     Write-Verbose "Object output:`n`n$($movieObj | Out-String)"
@@ -373,7 +449,7 @@ catch {
     if (!$id) {
         try {
             $testTitle = 'Ex Machina'
-            $testQuery = Get-ID -Title $testTitle -APIKey $APIKey -ErrorAction Stop
+            $testQuery = Get-ID -Title $testTitle -APIKey $APIKey -Year $Year -ErrorAction Stop
         }
         catch {
             $params = @{
