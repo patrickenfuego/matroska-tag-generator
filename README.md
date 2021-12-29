@@ -2,9 +2,13 @@
 
 ![MediaInfo Example](https://i.imgur.com/s3ohFhp.png)
 
-A CLI-based PowerShell script for automating Matroska tag files using the TMDB API. Cross-platform and compatible with PowerShell 5.1 or greater (linux/macOS users must install PowerShell 6/7).
+A CLI-based PowerShell script for automating Matroska tag files using the TMDB API. Cross-platform and compatible with PowerShell 5.1 or greater (linux/macOS users must install PowerShell 6/7). 
+
+Also included is a Windows `.bat` script for drag and drop tag file generation using the PowerShell script.
 
 ## About
+
+> NOTE: Using the `.bat` method for generating files only provides access to the `-Path` parameter, and may return incorrect results depending on the file name. Use the PowerShell script directly for full functionality
 
 This script allows you to quickly generate XML tag files for media using the Matroska (mkv) container format.
 
@@ -24,19 +28,22 @@ By default, the script pulls the following fields:
 
 > For more information on parameters, run: `Get-Help .\MatroskaTagGenerator.ps1 -Full`
 
-| Name             | Description                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `Path`           | Path to the output file. Can be an existing mkv file or a new XML file (required). Positional parameter          |
-| `APIKey`         | TMDB API key to use (optional)                                                                                   |
-| `Title`          | Optional clean title to use for the API search                                                                   |
-| `Properties`     | Additional metadata properties to include. If they do not exist/cannot be found, they will be skipped (optional) |
-| `SkipProperties` | Skip some/all of the property fields generated automatically, such cast **Cast** (optional)                      |
-| `NoMux`          | Switch flag to disable automatic muxing of tag files into the container (optional)                               |
-| `AllowClobber`   | Switch flag to force overwriting an XML file if one already exists at that location (optional)                   |
+| Name             | Description                                                                                                                     | Type       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `Path`           | Path to the output file. Can be an existing mkv file or a new XML file (required). This parameter is exposed to the `.bat` file | Positional |
+| `APIKey`         | TMDB API key to use (optional)                                                                                                  | Positional |
+| `Title`          | Optional clean title to use for the API search                                                                                  | Positional |
+| `Year`           | Optional year to use for the API search. Useful for differentiating titles with the same name (such as remakes)                 | Named      |
+| `Properties`     | Additional metadata properties to include. If they do not exist/cannot be found, they will be skipped (optional)                | Named      |
+| `SkipProperties` | Skip some/all of the property fields generated automatically, such cast **Cast** (optional)                                     | Named      |
+| `NoMux`          | Switch flag to disable automatic muxing of tag files into the container (optional)                                              | Named      |
+| `AllowClobber`   | Switch flag to force overwriting an XML file if one already exists at that location (optional)                                  | Named      |
 
 ## Usage
 
-By default, the script uses the leaf of the output file name as the basis for the API search. For example, if a file named `C:\Movies\Ex Machina.mkv` is passed, 'Ex Machina' will be the search query. For files with extra details (i.e. `~/movies/Ex.Machina.2014.2160p.BluRay.mkv`), the script will attempt to extract & sanitize the base film title automatically. If this does not work, use the `-Title` parameter to pass a clean title instead.
+By default, the script uses the leaf of the output file name as the basis for the API search. For example, if a file named `C:\Movies\Ex Machina 2014.mkv` is passed, 'Ex Machina' and 2014 will be used in the search query. For files with extra details (i.e. `~/movies/Ex.Machina.2014.2160p.UHD.BluRay.mkv`), the script will attempt to extract & sanitize the base film title and year automatically. Title's that have a year in the name (Such as *Blade Runner 2049*) may not be parsed correctly, and the `-Year` parameter should be used.
+
+If a year is not present (either via the file name or parameter), the script will grab the first object returned (usually the most relevant). If this does not work (or returns an incorrect match), use the `-Title` and/or `-Year` parameters to pass a clean title and release year instead.
 
 If the output file passed via `-Path` is an mkv file and `mkvpropedit` is installed on the system, the script will automatically add the tag file to the container (the file must exist already); if `mkvpropedit` is not installed, a tag file will be created in the same directory as the mkv file. If an XML file path is passed via `-Path`, the script will generate the file and save it at that location instead.
 
