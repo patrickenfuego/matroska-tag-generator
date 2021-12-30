@@ -6,6 +6,19 @@ A CLI-based PowerShell script for automating Matroska tag files using the TMDB A
 
 Also included is a Windows `.bat` script that you can drag and drop files onto via the GUI.
 
+- [matroska-tag-generator](#matroska-tag-generator)
+  - [About](#about)
+  - [Parameters](#parameters)
+  - [Usage](#usage)
+  - [Examples](#examples)
+    - [Pass an mkv file to the script and append the tags automatically](#pass-an-mkv-file-to-the-script-and-append-the-tags-automatically)
+    - [Pass a clean title & year](#pass-a-clean-title--year)
+    - [Pass an XML file to be created at the specified path](#pass-an-xml-file-to-be-created-at-the-specified-path)
+    - [Generate a tag file without Cast and IMDb ID metadata](#generate-a-tag-file-without-cast-and-imdb-id-metadata)
+    - [Generate a tag file with additional metadata such as Overview and Budget](#generate-a-tag-file-with-additional-metadata-such-as-overview-and-budget)
+
+---
+
 ## About
 
 > NOTE: Using the `.bat` method for generating files only provides access to the `-Path` parameter, and may return incorrect results depending on the file name. Use the PowerShell script directly for full functionality
@@ -25,6 +38,8 @@ By default, the script pulls the following fields, but any/all of them can be om
 - Cast (top 5 billed)
 - Writers with designations such as 'screenplay' or 'novel' (top 3 billed)
 - Director(s) (top 2 billed)
+
+---
 
 ## Parameters
 
@@ -53,9 +68,11 @@ When using your API key, you may pass it via the `-APIKey` parameter (useful whe
 [string]$APIKey = 'your_key_here',
 ```
 
+---
+
 ## Examples
 
-### Pass an mkv file to the script and append the tags automatically (if `mkvpropedit` is installed)
+### Pass an mkv file to the script and append the tags automatically
 
 ```PowerShell
 PS > .\MatroskaTagGenerator.ps1 -Path 'C:\Movies\Ex.Machina.2014.UHD.2160p.HDR.bluray.mkv'
@@ -65,14 +82,38 @@ PS > .\MatroskaTagGenerator.ps1 '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.m
 PS > & ~/scripts/MatroskaTagGenerator.ps1 -Path '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.mkv'
 ```
 
-### Pass a clean title if results are not being returned
+---
 
-> NOTE: The script will attempt to extract & sanitize the title & year automatically
+### Pass a clean title & year
+
+Most of the time, the script can extract the title and year automatically. Some file names (depending on the structure) may require the `-Title` and `-Year` parameters to parse properly:
 
 ```PowerShell
-PS > .\MatroskaTagGenerator.ps1 '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.mkv' `
-     -Title 'Ex Machina'
+#This file name will need a clean title and year
+PS > .\MatroskaTagGenerator.ps1 '~/Movies/Blade Runner 2049 2017.mkv' `
+     -Title 'Blade Runner 2049' -Year 2017
 ```
+
+```PowerShell
+#This file name should be parsed correctly
+PS > .\MatroskaTagGenerator.ps1 '~/Movies/Blade.Runner.2049.2017.2160p.BluRay.mkv'
+```
+
+In some cases, there may be multiple releases for the same title, and the year parameter is needed to differentiate them:
+
+```PowerShell
+#By default, the API will pull the 1975 version of Zorro
+PS > .\MatroskaTagGenerator.ps1 '~/Movies/Zorro.mkv'
+```
+
+Use the year parameter to specify the 1990 version of *Zorro*:
+
+```PowerShell
+#By default, the API will pull the 1975 version of Zorro
+PS > .\MatroskaTagGenerator.ps1 '~/Movies/Zorro.mkv' -Year 1990
+```
+
+---
 
 ### Pass an XML file to be created at the specified path
 
@@ -80,11 +121,15 @@ PS > .\MatroskaTagGenerator.ps1 '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.m
 PS > .\MatroskaTagGenerator.ps1 -Path 'C:\Movies\Ex Machina\Ex Machina.xml'
 ```
 
+---
+
 ### Generate a tag file without Cast and IMDb ID metadata
 
 ```PowerShell
-PS > .\MatroskaTagGenerator.ps1' C:\Movies\Ex Machina\Ex Machina.mkv' -SkipProperties Cast, IMDbID
+PS > .\MatroskaTagGenerator.ps1 'C:\Movies\Ex Machina\Ex Machina.mkv' -SkipProperties Cast, IMDbID
 ```
+
+---
 
 ### Generate a tag file with additional metadata such as Overview and Budget
 
