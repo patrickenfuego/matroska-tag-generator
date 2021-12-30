@@ -166,7 +166,7 @@ function Get-ID {
 
         $queryID = $query.results[0].id
     }
-    else { $queryID = $query.results[0] }
+    else { $queryID = $query.results[0].id }
     
     if ($queryID) {
         Write-Host "ID successfully retrieved! ID: " -NoNewline
