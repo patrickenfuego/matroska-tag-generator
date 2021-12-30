@@ -71,7 +71,7 @@ PS > & ~/scripts/MatroskaTagGenerator.ps1 -Path '~/Movies/Ex.Machina.2014.UHD.21
 
 ```PowerShell
 PS > .\MatroskaTagGenerator.ps1 '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.mkv' `
-                                 -Title 'Ex Machina'
+     -Title 'Ex Machina'
 ```
 
 ### Pass an XML file to be created at the specified path
