@@ -67,10 +67,11 @@ PS > & ~/scripts/MatroskaTagGenerator.ps1 -Path '~/Movies/Ex.Machina.2014.UHD.21
 
 ### Pass a clean title if results are not being returned
 
-> NOTE: The script will attempt to extract & sanitize the title automatically
+> NOTE: The script will attempt to extract & sanitize the title & year automatically
 
 ```PowerShell
-PS > .\MatroskaTagGenerator.ps1 '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.mkv' -Title 'Ex Machina'
+PS > .\MatroskaTagGenerator.ps1 '~/Movies/Ex.Machina.2014.UHD.2160p.HDR.bluray.mkv' `
+                                 -Title 'Ex Machina'
 ```
 
 ### Pass an XML file to be created at the specified path
@@ -82,7 +83,7 @@ PS > .\MatroskaTagGenerator.ps1 -Path 'C:\Movies\Ex Machina\Ex Machina.xml'
 ### Generate a tag file without Cast and IMDb ID metadata
 
 ```PowerShell
-PS > .\MatroskaTagGenerator.ps1'C:\Movies\Ex Machina\Ex Machina.mkv' -SkipProperties cast, IMDbID
+PS > .\MatroskaTagGenerator.ps1' C:\Movies\Ex Machina\Ex Machina.mkv' -SkipProperties Cast, IMDbID
 ```
 
 ### Generate a tag file with additional metadata such as Overview and Budget
