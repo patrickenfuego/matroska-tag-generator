@@ -379,14 +379,14 @@ if (!$PSBoundParameters['Title'] -or !$PSBoundParameters['Year']) {
     #Try to sanitize input title
     $mTitle, $mYear = switch -Regex ($leafBase) {
         '^(?<title>[^(]+(?=\d+)?).*\(?(?<year>\d{4})\)?$' {
-            Write-host "Match case 1"
+            Write-Verbose "Match case 1"
             ($Matches.title -replace '\.|_', ' ').Trim(),
             ($Matches.year).Trim()
     
             break 
         }
         '^(?<title>.+(?=\d+)?).*(?<year>\d{4}).*\d+p' {
-            Write-host "Match case 2"
+            Write-Verbose "Match case 2"
             ($Matches.title -replace '\.|_|\(', ' ').Trim(),
             ($Matches.year).Trim()
     
