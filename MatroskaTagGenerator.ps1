@@ -132,6 +132,10 @@ $banner = @'
 #     # #    #   #   #    #  ####   ####  #    # #    #       #    #    #  ####      #####  ###### #    # ###### #    # #    #   #    ####  #    # 
 '@
 
+#Set Window Name
+$currName = $host.ui.RawUI.WindowTitle
+$host.ui.RawUI.WindowTitle = 'MKV Tag Generator'
+
 #########################################################
 # Function Definitions                                  #                                           
 #########################################################
@@ -201,7 +205,7 @@ function Get-Metadata {
     #Create base object
     if ('TMDbID' -notin $SkipProperties) {
         $obj = @{
-            'TMDB' = $Id
+            'TMDB' = "movie/$Id"
         }
     }
     else { $obj = @{} }
@@ -511,9 +515,10 @@ if ((Get-Command 'mkvpropedit') -and !$PSBoundParameters['NoMux'] -and $Path.End
 }
 elseif (!(Get-Command 'mkvpropedit') -and !$PSBoundParameters['NoMux']) {
     Write-Host "mkvpropedit not found in PATH. Add the tag file to the container manually" @warnColors
-    exit 0
 }
 else {
     Write-Host "Success! Exiting script" @progressColors
-    exit 0
 }
+
+$host.ui.RawUI.WindowTitle = $currName
+exit 0
