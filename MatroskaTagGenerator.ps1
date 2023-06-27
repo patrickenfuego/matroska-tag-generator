@@ -85,11 +85,12 @@ param (
     [Alias('P', 'File')]
     [string]$Path,
 
-    [Parameter(Mandatory = $true, Position = 1)]
+    [Parameter(Mandatory = $false, Position = 1, 
+               HelpMessage = 'TMDB API Key. You can set line 90 equal to your API key to avoid passing it as a parameter')]
     [Alias('Key')]
     [string]$APIKey,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, Position = 2)]
     [Alias('T')]
     [string]$Title,
 
@@ -173,6 +174,10 @@ function Get-ID {
     else { $queryID = $query.results[0].id }
     
     if ($queryID) {
+        if ($queryID.Count -gt 1) {
+            Write-Host "More than 1 ID returned. Selecting the first option"
+            $queryID = $queryID[0]
+        }
         Write-Host "ID successfully retrieved! ID: " -NoNewline
         Write-Host $queryID @progressColors
         if ('TMDbID' -in $SkipProperties) {
@@ -210,10 +215,12 @@ function Get-Metadata {
     }
     else { $obj = @{} }
 
-    # Pull general info including IMDb ID
+    # Pull general info to collect other props
+    $genQuery = Invoke-RestMethod -Uri "https://api.themoviedb.org/3/movie/$($id)?api_key=$($APIKey)" -Method GET
+
+    # Pull IMDb ID
     if ('IMDbID' -notin $SkipProperties) {
         Write-Host "Requesting IMDB ID..."
-        $genQuery = Invoke-RestMethod -Uri "https://api.themoviedb.org/3/movie/$($id)?api_key=$($APIKey)" -Method GET
         if ($imdbID = $genQuery | Select-Object -ExpandProperty imdb_id) {
             Write-Host "IMDb ID successfully retrieved! ID: " -NoNewline
             Write-Host $imdbID @progressColors
@@ -224,7 +231,7 @@ function Get-Metadata {
             Write-Warning "Failed to retrieve IMDb ID. Property will be skipped"
         }
     }
-    else { Write-Host "Skipping IMDb ID..." @warnColors  }
+    else { Write-Host "Skipping IMDb ID..." @warnColors }
 
     Write-Host "---------------------------------------------" @dividerColor
 
@@ -366,6 +373,16 @@ function New-XMLTagFile {
 # Main Script Logic                                     #                                           
 #########################################################
 
+if (!$APIKey) {
+    $params = @{
+        CategoryActivity  = 'MKV Tag Generator'
+        Category          = 'InvalidArgument'
+        Message           = "MatroskaTagGenerator: An API key is required"
+        ErrorId           = 77
+    }
+    Write-Error "MatroskaTagGenerator: An API key is required" -ErrorAction Stop
+}
+
 if ($Path.EndsWith('.xml')) {
     $outXML = $Path
 }
@@ -375,7 +392,7 @@ else {
 
 if ((Test-Path -Path $outXML) -and !$PSBoundParameters['AllowClobber']) {
     Write-Host "<$outXML> already exists. To proceed, delete the file or use the -AllowClobber parameter to overwrite`n" @warnColors
-    exit 1
+    exit 0
 }
 
 Write-Host "$banner2`n`n" @dividerColor
