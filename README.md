@@ -1,6 +1,8 @@
 # matroska-tag-generator
 
-![MediaInfo Example](https://i.imgur.com/s3ohFhp.png)
+![Output_Example](https://github.com/patrickenfuego/matroska-tag-generator/assets/47511320/ea59ba09-5362-48b6-b37b-016370b39932)
+
+![MediaInfo_Example](https://github.com/patrickenfuego/matroska-tag-generator/assets/47511320/d0d4863c-74ce-403c-9de7-e08f0ef13bfd)
 
 A CLI-based PowerShell script for automating Matroska tag files using the TMDB API. Cross-platform and compatible with PowerShell 5.1 or greater (linux/macOS users must install PowerShell 6/7). 
 
@@ -12,7 +14,7 @@ Also included is a Windows `.bat` script that you can drag and drop files onto v
   - [Usage](#usage)
   - [Examples](#examples)
     - [Pass an mkv file to the script and append the tags automatically](#pass-an-mkv-file-to-the-script-and-append-the-tags-automatically)
-    - [Pass a clean title & year](#pass-a-clean-title--year)
+    - [Pass a clean title \& year](#pass-a-clean-title--year)
     - [Pass an XML file to be created at the specified path](#pass-an-xml-file-to-be-created-at-the-specified-path)
     - [Generate a tag file without Cast and IMDb ID metadata](#generate-a-tag-file-without-cast-and-imdb-id-metadata)
     - [Generate a tag file with additional metadata such as Overview and Budget](#generate-a-tag-file-with-additional-metadata-such-as-overview-and-budget)
