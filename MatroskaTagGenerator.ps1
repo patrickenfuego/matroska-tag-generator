@@ -161,8 +161,11 @@ $ErrorView = 'NormalView'
 
 # Console colors
 $progressColors = @{ForegroundColor = 'Green'; BackgroundColor = 'Black' }
+$errorColors = @{ForegroundColor = 'Red'; BackgroundColor = 'Black' }
 $warnColors = @{ForegroundColor = 'Yellow'; BackgroundColor = 'Black' }
 $dividerColor = @{ ForegroundColor = 'DarkMagenta'; BackgroundColor = 'Black' }
+$titleColor = @{ ForegroundColor = 'Cyan'; BackgroundColor = 'Black' }
+$yearColor = @{ ForegroundColor = 'Blue'; BackgroundColor = 'Black' }
 
 $banner2 = @'
  __  __   _  __ __   __    _____                    ___                                   _               
@@ -194,7 +197,11 @@ function Get-ID {
         [int]$Year
     )
 
-    Write-Host "Requesting TMDB ID for '$Title'..."
+    Write-Host "`n---------------------------------------------" @dividerColor
+    Write-Host "Requesting TMDB ID for " -NoNewline
+    Write-Host "'$Title'" @titleColor -NoNewline
+    Write-Host '...'
+
     $query = Invoke-RestMethod -Uri "https://api.themoviedb.org/3/search/movie?api_key=$($APIKey)&query=$($Title)" -Method GET
     
     # Verify if API returned multiple objects, and warn if no year was passed
@@ -204,13 +211,16 @@ function Get-ID {
     }
     elseif ($query.results.Count -gt 1 -and !$Year) {
         $msg = "Query returned more than 1 result, but a release year was not specified - " +
-               "the result may be incorrect. Consider using the -Year parameter " +
-               "or place the year in the file's title if needed"
+               "the result may be incorrect.`nConsider using the -Year parameter " +
+               "or place the year in the file's title"
         Write-Warning $msg
 
         $queryID = $query.results[0].id
     }
-    else { $queryID = $query.results[0].id }
+    # Lazy falkback
+    else { 
+        $queryID = $query.results[0].id 
+    }
     
     if ($queryID) {
         if ($queryID.Count -gt 1) {
@@ -359,7 +369,7 @@ function Get-Metadata {
                     Write-Host "$prop metadata successfully retrieved! $prop info: " -NoNewline
                     Write-Host $genQuery.$prop @progressColors
                 }
-                else { Write-Warning "$prop is a duplicate key. Property will be skipped"}
+                else { Write-Warning "'$prop' is a duplicate key. Property will be skipped"}
             }
             else { Write-Host "$prop property was not found on return object" @warnColors }
 
@@ -459,24 +469,24 @@ if (!$PSBoundParameters['Title'] -or !$PSBoundParameters['Year']) {
         default { 'Undefined', 'Undefined' }
     }
     
-    # Verify if Title was passed. Otherwise, assign to mTitle if applicable
-    if ($PSBoundParameters['Title']) {
-        Write-Host "Search title: " -NoNewline
-        Write-Host $Title @progressColors
-    }
-    elseif (!$Title -and $mTitle -ne 'Undefined') {
-        $Title = $mTitle
-        Write-Host "Search title: " -NoNewline
-        Write-Host $Title @progressColors
-    }
-    else {
-        $msg = "Could not sanitize input title, query may fail. If incorrect results are returned " +
-               "or the script fails, use the -Title parameter to specify a clean title"
-        Write-Warning $msg
-        $Title = $leafBase -replace '\.|_', ' '
-        Write-Host "Title is: " -NoNewline
-        Write-Host $Title @progressColors
-    }
+# Verify if Title was passed. Otherwise, assign to mTitle if applicable
+if ($PSBoundParameters['Title']) {
+    Write-Host "Search title: " -NoNewline
+    Write-Host $Title @titleColor
+}
+elseif (!$Title -and $mTitle -ne 'Undefined') {
+    $Title = $mTitle
+    Write-Host "Search title: " -NoNewline
+    Write-Host $Title @titleColor
+}
+else {
+    $msg = "Could not sanitize input title, query may fail. If incorrect results are returned " +
+            "or the script fails, use the -Title parameter to specify a clean title"
+    Write-Warning $msg
+    $Title = $leafBase -replace '\.|_', ' '
+    Write-Host "Title is: " -NoNewline
+    Write-Host $Title @titleColor
+}
 
     # Verify if Year was passed. Otherwise, assign to mYear if applicable
     if ($PSBoundParameters['Year']) {
