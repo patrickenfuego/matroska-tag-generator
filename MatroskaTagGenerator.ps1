@@ -586,6 +586,12 @@ catch {
     }
 }
 
+if ($DisplayOnly) {
+    Write-Host "Display only. No tag file will be generated" @progressColors
+    Write-Host "Exiting...`n"
+    exit 0
+}
+
 # Try to create XML file
 try {
     New-XMLTagFile -Metadata $movieObj -OutputFile $outXML -ErrorAction Stop
@@ -610,6 +616,11 @@ elseif (!(Get-Command 'mkvpropedit') -and !$PSBoundParameters['NoMux']) {
 }
 else {
     Write-Host "Success! Exiting script" @progressColors
+}
+
+if (!$xmlFile -and !$PSBoundParameters['SaveXML']) {
+    Write-Host "Deleting XML tag file..." @progressColors
+    Remove-Item $outXML -ErrorAction SilentlyContinue
 }
 
 Write-Host ""
