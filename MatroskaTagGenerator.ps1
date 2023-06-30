@@ -92,39 +92,65 @@
         MKVToolNix: https://mkvtoolnix.download/index.html
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Path')]
 param (
-    [Parameter(Mandatory = $true, Position = 0)]
-    [Alias('P', 'File')]
+    [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Path')]
+    [ValidateScript(
+        {
+            $info = [IO.FileInfo]$_
+            if ($info.Extension -like '.xml' -and (Test-Path $info.DirectoryName)) {
+                $true
+            }
+            else {
+                Test-Path $_
+            }
+        },
+        ErrorMessage = "File '{0}' does not exist or the parent directory does not exist if output path is xml."
+    )]
+    [Alias('P', 'FilePath', 'F')]
     [string]$Path,
 
-    [Parameter(Mandatory = $false, Position = 1, 
-               HelpMessage = 'TMDB API Key. You can set line 90 equal to your API key to avoid passing it as a parameter')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Print')]
+    [Alias('ConsoleOutput', 'Print')]
+    [switch]$DisplayOnly,
+
+    [Parameter(Mandatory = $false, Position = 1, ParameterSetName = 'Path')]
+    [Parameter(Mandatory = $false, Position = 1, ParameterSetName = 'Print')]
     [Alias('Key')]
     [string]$APIKey,
 
-    [Parameter(Mandatory = $false, Position = 2)]
-    [Alias('T')]
+    [Parameter(Mandatory = $false, Position = 2, ParameterSetName = 'Path')]
+    [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'Print')]
+    [Alias('Name', 'T')]
     [string]$Title,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Path')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Print')]
+    [Alias('Y')]
     [int]$Year,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Path')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Print')]
     [Alias('Props')]
     [string[]]$Properties,
 
-    [Parameter(Mandatory = $false)]
-    [Alias('Skip')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Path')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Print')]
     [ValidateSet('Writers', 'Directors', 'Cast', 'IMDbID', 'TMDbID')]
+    [Alias('Skip')]
     [string[]]$SkipProperties,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Path')]
+    [Alias('FileOnly')]
     [switch]$NoMux,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Path')]
     [Alias('Overwrite')]
-    [switch]$AllowClobber
+    [switch]$AllowClobber,
+
+    [Parameter(Mandatory = $false, ParameterSetName = 'Path')]
+    [Alias('KeepXML')]
+    [switch]$SaveXML
 )
 
 #########################################################
