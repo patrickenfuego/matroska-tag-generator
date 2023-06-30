@@ -11,40 +11,53 @@
         extra information other than the title, use the -Title parameter to pass a clean title - the script
         will attempt to sanitize the input, but this may not always work depending on the file
     .PARAMETER Path
-        <String> Path to output file. The name of the file is used to search the API, i.e.
-                 'D:\Movies\Ex Machina.mkv' will use 'Ex Machina' for the search. Most container
-                 formats are accepted, but tags will only be added to mkv files automatically
+        Path to output file. The name of the file is used to search the API, i.e.
+        'D:\Movies\Ex Machina.mkv' will use 'Ex Machina' for the search. Most container
+        formats are accepted, but tags will only be added to mkv files automatically.
 
-                 Optionally, you may specify an XML output path as well, which will generate the
-                 tag file at the destination specified but not add it to the container automatically
+        Optionally, you may specify an XML output path as well, which will generate the
+        tag file at the destination specified but not add it to the container automatically.
+
+        This parameter is part of a parameter set that requires the -Path parameter be passed.
+    .PARAMETER DisplayOnly
+        Switch parameter to display the query output to the console instead of writing to a file.
+        This parameter is useful for testing the script before running it on a file.
+
+        This parameter is part of a parameter set that requires the -Title parameter be passed
+        instead of the file path.
     .PARAMETER APIKey
-        <String> API keys used to query for IMDb/TMDB information. If no key is passed, 
-                 the script will attempt to use the globally defined key if present
+        PI keys used to query for IMDb/TMDB information. If no key is passed, 
+        the script will attempt to use the globally defined key if present
     .PARAMETER Properties
-        <String[]> Additional properties to add to the tag file (if found during the search)
+        Additional properties to add to the tag file (if found during the search).
     .PARAMETER SkipProperties
-        <String[]> Comma separated list of properties to exclude from tag file. Accepted values:
-                    - Writers
-                    - Directors
-                    - Cast
+        Comma separated list of properties to exclude from tag file. Accepted values:
+            - Writers
+            - Directors
+            - Cast
     .PARAMETER Title
-        <String> Specify a clean title to use for the API search. Use this when the destination file title 
-                 contains characters that may disrupt the search; the script will attempt to sanitize input
-                 file names, but may not be successful
+        Specify a clean title to use for the API search. Use this when the destination file title 
+        contains characters that may disrupt the search; the script will attempt to sanitize input
+        file names, but may not be successful.
     .PARAMETER Year
-        <int32> Specify the release year for the search title. This parameter is helpful for titles with
-                multiple release years, such as remakes. This parameter should be used when the API returns
-                incorrect results. It can also be helpful for titles that have a year in the name already
-                (i.e. 'Blade Runner 2049 2017')
+        Specify the release year for the search title. This parameter is helpful for titles with
+        multiple release years, such as remakes. This parameter should be used when the API returns
+        incorrect results. It can also be helpful for titles that have a year in the name already
+        (i.e. 'Blade Runner 2049 2017').
     .PARAMETER NoMux
-        <Bool> Switch parameter to skip file multiplexing with mkvpropedit (but still generate the file)
+        Switch parameter to skip file multiplexing with mkvpropedit (but still generate the file)
     .PARAMETER AllowClobber
-        <Bool> Switch parameter to force overwrite existing XML file if it exists
+        Switch parameter to force overwrite existing XML file if it exists.
+    .PARAMETER SaveXML
+        Switch parameter to save the XML file after muxing into the container. Does not apply if the
+        -Path parameter ends in .xml.
     .INPUTS
-        <String> Path to MKV file or output destination
-        <String> API key
+        Parameter Set 1: Path to MKV file to tag or path to output XML destination.
+        Parameter Set 2: Title of movie to search for. This parameter is used when the -DisplayOnly
+                         switch is used.
+        API key
     .OUTPUTS
-        <XML> File formatted for Matroska tags, including:
+        File formatted for Matroska tags, including:
               - Cast
               - Directed By
               - Written By
