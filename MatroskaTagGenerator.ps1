@@ -234,6 +234,9 @@ function Get-ID {
         }
         Write-Host "---------------------------------------------" @dividerColor
     }
+    else {
+        throw "Failed to retrieve TMDB ID for '$Title'"
+    }
     
     return [int]$queryID
 }
@@ -308,7 +311,7 @@ function Get-Metadata {
     if ('Writers' -notin $SkipProperties) {
         Write-Host "Requesting writers metadata..."
         $writers = $credits.crew | Where-Object { $_.department -eq "Writing" } | 
-                Select-Object name, job -First 3 -Unique
+            Select-Object name, job -First 3 -Unique
         if ($writers -is [array]) {
             [array]$writerArray += $writers.ForEach({ "$($_.name) ($($_.job))" })
         }
@@ -351,19 +354,24 @@ function Get-Metadata {
         Write-Verbose "Property passed: $($Properties -join ', ')"
         foreach ($prop in $Properties) {
             if (![string]::IsNullOrEmpty($genQuery.$prop)) {
-                $prop = (Get-Culture).TextInfo.ToTitleCase($prop)
+                $propName = (Get-Culture).TextInfo.ToTitleCase($prop).Replace('_', ' ')
                 # check for duplicate key before adding
                 if (!$obj.ContainsKey($prop)) {
                     if ($prop -like "budget") {
                         [int]$val = $genQuery.$prop
                         $fNumber = "$" + $("{0:N0}" -f $val)
-                        $obj.Add($prop, $fNumber)
+                        $obj.Add($propName, $fNumber)
                     }
-                    elseif ($prop -like 'genres' -or $prop -like 'production*countries' -or $prop -like 'production*companies') {
-                        $val = $genQuery.$prop.name.ForEach({ $_ }) -join ', '
-                        $obj.Add($prop, $val)
+                    # Try to add the prop but catch the error if it's not found
+                    elseif ($genQuery.$prop) {
+                        if ($genQuery.$prop.name -is [array]) {
+                            $obj.Add($propName, $genQuery.$prop.name -join ', ')
+                        }
+                        else { $obj.Add($propName, $genQuery.$prop) }
                     }
-                    else { $obj.Add($prop, $genQuery.$prop) }
+                    else {
+                        Write-Warning "'$prop' could not be found or unpacked on the return object. Property will be skipped"
+                    } 
                     
                     Write-Host "---------------------------------------------" @dividerColor
                     Write-Host "$prop metadata successfully retrieved! $prop info: " -NoNewline
@@ -434,9 +442,11 @@ if (!$APIKey) {
 
 if ($Path.EndsWith('.xml')) {
     $outXML = $Path
+    $xmlFile = $true
 }
 else {
     $outXML = $Path -replace '^(.+)\.(.+)$', '$1.xml'
+    $xmlFile = $false
 }
 
 if ((Test-Path -Path $outXML) -and !$PSBoundParameters['AllowClobber']) {
@@ -446,28 +456,39 @@ if ((Test-Path -Path $outXML) -and !$PSBoundParameters['AllowClobber']) {
 
 Write-Host "$banner2`n`n" @dividerColor
 
-# Sanitize title/year if not passed via parameter
-if (!$PSBoundParameters['Title'] -or !$PSBoundParameters['Year']) {
-    $leafBase = Split-Path -Path $Path -LeafBase
+$matchPropsSB = {
+    param ($LeafBase)
 
     # Try to sanitize input title
-    $mTitle, $mYear = switch -Regex ($leafBase) {
-        '^(?<title>[^(]+(?=\d+)?).*\(?(?<year>\d{4})\)?$' {
+    $mTitle, $mYear = switch -Regex ($LeafBase) {
+        '^(?<title>.+(?=[0-9]*)?)[\s\._,]*(?<year>\d{4}(?!p))' {
             Write-Verbose "Match case 1"
-            ($Matches.title -replace '\.|_', ' ').Trim(),
+            ($Matches.title -replace '\.|_|\(|,|\)', ' ').Trim(),
             ($Matches.year).Trim()
     
             break 
         }
-        '^(?<title>.+(?=\d+)?).*(?<year>\d{4}).*\d+p' {
+        '^(?<title>.+(?=\d+)?)' {
             Write-Verbose "Match case 2"
-            ($Matches.title -replace '\.|_|\(', ' ').Trim(),
-            ($Matches.year).Trim()
+            ($Matches.title -replace '\.|_', ' ').Trim(),
+            'Undefined'
     
             break 
         }
         default { 'Undefined', 'Undefined' }
     }
+
+    return $mTitle, $mYear
+}
+
+# Sanitize title/year if passed via parameter
+if ($PSCmdlet.ParameterSetName -eq 'Print') {
+    $mTitle, $mYear = & $matchPropsSB -LeafBase $Title
+}
+elseif (!$PSBoundParameters['Title']) {
+    $leafBase = ([IO.FileInfo]$Path).BaseName
+    $mTitle, $mYear = & $matchPropsSB -LeafBase $leafBase
+}
     
 # Verify if Title was passed. Otherwise, assign to mTitle if applicable
 if ($PSBoundParameters['Title']) {
@@ -488,29 +509,31 @@ else {
     Write-Host $Title @titleColor
 }
 
-    # Verify if Year was passed. Otherwise, assign to mYear if applicable
-    if ($PSBoundParameters['Year']) {
-        if ([string]$Year -notmatch '^[0-9]{4}$') {
-            $msg = "Incorrect Year format. A 4 digit integer was expected, but $Year was received. " +
-                   "Value will be skipped"
-            Write-Warning $msg
-            $Year = $null
-        }
-        else {
-            Write-Host "Search year: " -NoNewline
-            Write-Host $Year @progressColors
-        }
-    }
-    elseif (!$Year -and $mYear -ne 'Undefined') {
-        [int]$Year = $mYear
-        Write-Host "Search year: " -NoNewline
-        Write-Host $Year @progressColors
-    }
-    else { 
-        Write-Warning "Could not sanitize input year, or no year was provided"
+# Verify if Year was passed. Otherwise, assign to mYear if applicable
+if ($PSBoundParameters['Year']) {
+    if ([string]$Year -notmatch '^[0-9]{4}$') {
+        $msg = "Incorrect Year format. A 4 digit integer was expected, but '$Year' was received. " +
+                "Value will be skipped"
+        Write-Warning $msg
         $Year = $null
     }
+    else {
+        Write-Host "Search year: " -NoNewline
+        Write-Host $Year @yearColor
+    }
 }
+elseif (!$Year -and $mYear -ne 'Undefined') {
+    [int]$Year = $mYear
+    Write-Host "Search year: " -NoNewline
+    Write-Host $Year @yearColor
+}
+else {
+    $msg = "Could not sanitize input year or no year was provided.`nIf matches are failing, " +
+            'specify the release year using the -Year parameter'
+    Write-Warning $msg
+    $Year = $null
+}
+
 
 # Try to retrieve metadata. Catch and display a variety of potential errors
 try {
@@ -522,15 +545,17 @@ try {
 catch {
     if (!$id) {
         try {
+            Write-Host $_.Exception.Message -NoNewline @errorColors
+            Write-Host '. Performing a test query to see if API is reachable...'
             $testTitle = 'Ex Machina'
-            $testQuery = Get-ID -Title $testTitle -APIKey $APIKey -Year $Year -ErrorAction Stop
+            $testQuery = Get-ID -Title $testTitle -APIKey $APIKey -Year '2015' -ErrorAction Stop
         }
         catch {
             $params = @{
-                Message           = "API endpoint is not reachable. Verify that the API key is not empty and that the endpoint is online"
-                RecommendedAction = "Verify API Key is not null or empty, and manually test API functionality"
+                Message           = 'API endpoint is not reachable. Verify that the API key is not empty and that the endpoint is online'
+                RecommendedAction = 'Verify API Key is not null or empty, and manually test API functionality'
                 Category          = 'AuthenticationError'
-                CategoryActivity  = "REST API Call to TMDB Failed"
+                CategoryActivity  = 'REST API Call to TMDB Failed'
                 TargetObject      = $APIKey
                 ErrorId           = 1
             }
@@ -538,10 +563,10 @@ catch {
         }
         if ($testQuery) {
             $params = @{
-                Message           = "Return ID is empty, but the API endpoint is reachable using:`n`nKey: '$APIKey'`nTest Query: '$testTitle'`n"
-                RecommendedAction = "Verify that the target title is correct"
+                Message           = "Return ID is empty, but the API endpoint is reachable using:`n`nKey:`t`t'$APIKey'`nTest Query:`t'$testTitle'`n`n"
+                RecommendedAction = 'Verify that the target title is correct'
                 Category          = 'InvalidArgument'
-                CategoryActivity  = "TMDB Identifier Retrieval"
+                CategoryActivity  = 'TMDB Identifier Retrieval'
                 TargetObject      = $title
                 ErrorId           = 2
             }
